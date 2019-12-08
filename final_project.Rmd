@@ -1,10 +1,49 @@
 ---
-title: "Final_Project"
+title: "Final_Project: Markov models for language"
 author: "Ling Tan, Xinlu Zhang"
 date: "11/27/2019"
 output: html_document
 ---
 
+# Introduction
+With the development of science and technology, more and more natural sciences can be explained by statistical probability. Researchers believe that the combination of big data and probability can effectively help people in various area in their lives. For example, natural language processing,as a subfield of linguistics, computer science and information science, becomes one of the most signficant and popular area which perfectly combines the real world data with probability model-Hidden Markov model. Artificial Intelligence researchers focus on the processing and understanding human language by imepmenting probability theory to analyze large amounts of natural language data. As far as we can see, understanding language by machine has played a pivotal role in people's common life in the form of translation, extarction, and artifical intelligence personal assitants.\n
+
+
+In this project, we focus on learning statistical language models which is the type of models that assign probabilities to the sequences of words, implementing the one-gram and bi-gram Markov models, and applying to 21 English language data sets which about novels written by Charles Dickens. The propose of this project is generating new text from the fitted Markov models.\n
+
+
+# data set introduction
+
+The data set we used in this project is the dataset from the first homework, which provided by Prof.Julia Fukuyama. This material was about novels of Charles John Huffam Dickens, who an famous English writer and social critic. The plot in the below shows all the titles of 21 books, number of words in each text martial, number of characters in each text file and number of roles mentioned in each file.
+
+```{r pressure, echo=FALSE, fig.cap="A caption", out.width = '100%'}
+knitr::include_graphics("book.png")
+```
+
+# N-grams
+
+## Conditional Probability
+The basic idea of n-gram is applying conditional probabilityof a word w given some history text $P(w|h)$.
+For Example, Suppose the history text h is "there are some master students in this course" and we
+want to know the probability that the next word is the "which", the probaility function would be represented as $$P( \text{which} | \text{there are some master students in this course}) = $$
+$$\frac{P(\text{there are some master students in this course which})}{P(\text{there are some master students in this course)}}.$$
+As the large enough number of data set we collect, we can compute the count of these event happened and  calculate the probability in the above.\n
+
+We could also implement the joint probability to resolve the same question, such that $P(\text{X=there, Y=are, Z=some, A=master, B=students, C=in, D=this, E=course, F=which)}= P(\text{X=there}) P(\text{Y=are}|\text{X=there})P(\text{Z=some}|\text{Y=are,X=there}) \cdots P(\text{ F=which}| \text{X=there, Y=are, Z=some, A=master, B=students, C=in, D=this, E=course})$. In general, the chain rule would be,
+$$P(X_1 \dots X_n) = P(X_1) P(X_2|X_1) P(X_3|X_1^2) \cdots P(X_n|X_1^{n-1}) $$
+where the $X_1^{n-1}$ represents the random variable $X_1, X_2, \dots, X_n$.\n
+Apply the chain rule to words,
+$$P(w_1^n ) = P(w_1) P(w_2|w_1) P(w_3|w_1^2) \cdots P(X_n|X_1^{n-1}) = \prod_{k=1}^n P(w_k|w_1^{k-1})$$
+The chain rule could provide a link relationship between computing the joint probability of a certain word sequence and computing the corresponding conditional probability of a word given previous words.\n
+However, it is really hard to compute the exact probability of a word when there is a long words sequence before it, because human language is very creative and any particular context may never happen before.\n
+
+Instead of calculating $P(w_n | w^{n-1}_1)$, researcher foucs on an approximated prbability which only depends on the sequence history by just last few words before the particular words we interested in. For example, if we just want to consider the last word before "which" in the sentence "there are some master students in this course which".Instead of computing the probability of 
+$$P( \text{which} | \text{there are some master students in this course}),$$
+we would like to approximate it by the probability
+$$P( \text{which} | \text{course}).$$
+## n-gram
+
+We say that we could implememnt n-gram models instead of compute the probability of all pervious elements happened. In here, the "$n$" represents the number of words we consider. When $n=1$, we only calculate the probability of each words appearing which do not depend pn any pervious words at all. For example, instead of joint probability $P( \text{which} | \text{there are some master students in this course}),$,the one gram model, which is always called as unigram model,calculates $P( \text{which})$. In addition, $P( \text{which} | \text{course})$ comes from a  bigram model.
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 library(ggplot2)
@@ -15,23 +54,31 @@ library(dplyr)
 library(readr)
 library(plotly)
 library(readr)
-setwd("/Users/addytan/Downloads/books")
+setwd("/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books")
 ```
 
+### Unigram
+A unigram model (one gram model) can be treated as the combination of several one-state finite automaton. It divides the probabilities of separate terms in a context, For instant, instead of calculate joint probability of $ P(t_1, t_2, t_3)= P(t_1) P(t_2| t_1) P( t_3| t_1, t_2)$, in a unigram model, we focus on$P_{uni}(t_1, t_2,t_3)= P(t_1)P(t_2)P(t_3)$. \n
+
+In this uni-gram model, the probability of each word only depends on that word's own probability in the particular text document or sequence. Because of that, the unit in this model is only one-state finite automaton. This automaton has a probability distribution which contains all the words in a sequence, and the summing of all possibkle outcome equals to 1. \\
+In the following code, we programming the unit gram model for all the 21 text documents of Charles Dickens. Even though different text file has it own pattern, we believe building one uni-gram could is better to exlpre the pattern of writing style of Charles Dickens, because a person would have the similar language pattern in his writting.\n
 
 ```{r data}
  ##working directory
-booklist = list.files("/Users/addytan/Downloads/books")
+require(knitr)
+opts_knit$set(root.dir = '/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books')
+booklist = list.files("/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books")
 
 textdata<-lapply(booklist, function(x) tm::PlainTextDocument(readr::read_lines(file = x, 
     progress = interactive()), heading = "KJB", id = basename(tempfile()), 
     language = "en", description = "Report File")) 
 
-gsub("[^[:alnum:] ]", "", str)
+
 
 stop_words<-T
 textdata <- tau::textcnt(
-  if(stop_words==T) {tm::removeWords(tm::scan_tokenizer(textdata), tm::stopwords("SMART"))}
+  if(stop_words==T) {textdata=gsub("[^[:alnum:] ]", "",textdata)
+  tm::removeWords(tm::scan_tokenizer(textdata), tm::stopwords("SMART"))}
   else {
     tm::scan_tokenizer(textdata)
   }, split = "[[:space:][:punct:][:digit:]]+",method = "string", n = 1L, lower = 1L)
@@ -42,9 +89,26 @@ textdata <- plyr::ldply(textdata, data.frame)
 colnames(textdata)<-c("word", "frequency")
 
 textdata$text_percent <- textdata$frequency / sum(textdata$frequency)*100
+new_onegrame_textdata <- textdata[order(-textdata$frequency),]
 
 ```
+We show the top 50 words out of 34254 words  in text documents. According to the two frequency table, we can see that, "I" and "Mr" have really high frequency than other words, which indeicates that Charles Dickens's novels may pay much attention on 
+the first-person perspective and male.
+```{r uni_gram_doc}
+head(new_onegrame_textdata,n=50)
+```
 
+
+### Bigram
+
+A bigram model is Aan n-gram model for n=2, which represent a model is built by a sequence of two adjacent elements from a string of tokens. The frequency distribution of bigram model in a squence is one of the most commonly used model for siample statsitical analysis of text data set in various applications, such as speech recognition and search engines recognition.
+
+The basic idea of bigrams is implementing the conditional probability of a token given the preceding token, which could be represent inj mathematics formula:
+$$P(W_n| W_{n-1})=\frac{P(W_{n-1}, W_n)}{P(W_{n-1})}.$$
+That is, the probability of the token word $W_n$ given the preceding token word $W_{n-1}$ equals to the probability of its bigram. Or, it can also be calculated by the co-occurance of probability of two token words $P(W_n, W_{n-1})$ divede by the probability of pervious token word $P(W_{n-1})$.\n
+
+In the following section, we implemented the bigram model and applied to the Charles Dickens's text documents.\n
+ 
 ```{r bigrame}
 bigram_textdata<-lapply(booklist, function(x) tm::PlainTextDocument(readr::read_lines(file = x, 
     progress = interactive()), heading = "KJB", id = basename(tempfile()), 
@@ -55,12 +119,12 @@ BigramTokenizer <-
     unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
 
 bigram_textdata <- tau::textcnt(
-  if(stop_words==T) {
+  if(stop_words==T) { bigram_textdata=gsub("[^[:alnum:] ]", "",bigram_textdata)
     tm::removeWords(tm::scan_tokenizer(bigram_textdata), tm::stopwords("SMART")
                     )}
   else {
     tm::scan_tokenizer(bigram_textdata)
-  }, method = "string", n = 2L, lower = 1L)
+  }, split = "[[:space:][:punct:][:digit:]]+",method = "string", n = 2L, lower = 1L)
 
 bigram_textdata <- plyr::ldply(bigram_textdata, data.frame) 
 colnames(bigram_textdata)<-c("word", "frequency")
@@ -68,3 +132,14 @@ bigram_textdata$text_percent <- bigram_textdata$frequency / sum(bigram_textdata$
 new_bigram_textdata <- bigram_textdata[order(-bigram_textdata$frequency),]
 head(new_bigram_textdata)
 ```
+According to head of frequency table of word pairs, the most frequency word pair in documents. is "i, i",whose freuqnecy is 4069 and the $P(W_n=i, W_{n-1}=i) =0.4824$. In order to calculate the bigram model, we divided the joint probability by the probability of unigram. 
+```{r}
+head(new_bigram_textdata)
+```
+
+After the bigram calculation, we selected the initial word as "i", and generated the sentence in the below:
+
+
+
+## Conclusion
+Language models contribute a process to distribute a probability to a sentence or a seuqnece of words, and to predict a word from leading words. n-grams models are Markov models which predict words from a fixed number of preceding words. In addition,the probabilities in n-gram models could be estimated by counting number of words occurence based on paricular pervious text condition. In this project, we implemented unigram and bigram models,applied both models with text documents of Charles Dickens and generated a new word sequence based on our analysis result.As we can see, both unigram and bigram models provided some particular features of text document written by Charles Dickens. As increase the size of preceding windows, there would be a more specific pattern once we implement models into different data set. This phenomenon indicates one of most common dilemmas in data analysis--there is always compromision between approxmation accuracy and computation complexity. 
