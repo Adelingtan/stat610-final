@@ -1,0 +1,70 @@
+---
+title: "Final_Project"
+author: "Ling Tan, Xinlu Zhang"
+date: "11/27/2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(ggplot2)
+library(tm)
+library(tau)
+library(plyr)
+library(dplyr)
+library(readr)
+library(plotly)
+library(readr)
+setwd("/Users/addytan/Downloads/books")
+```
+
+
+```{r data}
+ ##working directory
+booklist = list.files("/Users/addytan/Downloads/books")
+
+textdata<-lapply(booklist, function(x) tm::PlainTextDocument(readr::read_lines(file = x, 
+    progress = interactive()), heading = "KJB", id = basename(tempfile()), 
+    language = "en", description = "Report File")) 
+
+gsub("[^[:alnum:] ]", "", str)
+
+stop_words<-T
+textdata <- tau::textcnt(
+  if(stop_words==T) {tm::removeWords(tm::scan_tokenizer(textdata), tm::stopwords("SMART"))}
+  else {
+    tm::scan_tokenizer(textdata)
+  }, split = "[[:space:][:punct:][:digit:]]+",method = "string", n = 1L, lower = 1L)
+
+
+textdata <- plyr::ldply(textdata, data.frame) 
+
+colnames(textdata)<-c("word", "frequency")
+
+textdata$text_percent <- textdata$frequency / sum(textdata$frequency)*100
+
+```
+
+```{r bigrame}
+bigram_textdata<-lapply(booklist, function(x) tm::PlainTextDocument(readr::read_lines(file = x, 
+    progress = interactive()), heading = "KJB", id = basename(tempfile()), 
+    language = "en", description = "Report File"))
+
+BigramTokenizer <-
+  function(x)
+    unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
+
+bigram_textdata <- tau::textcnt(
+  if(stop_words==T) {
+    tm::removeWords(tm::scan_tokenizer(bigram_textdata), tm::stopwords("SMART")
+                    )}
+  else {
+    tm::scan_tokenizer(bigram_textdata)
+  }, method = "string", n = 2L, lower = 1L)
+
+bigram_textdata <- plyr::ldply(bigram_textdata, data.frame) 
+colnames(bigram_textdata)<-c("word", "frequency")
+bigram_textdata$text_percent <- bigram_textdata$frequency / sum(bigram_textdata$frequency)*100
+new_bigram_textdata <- bigram_textdata[order(-bigram_textdata$frequency),]
+head(new_bigram_textdata)
+```
