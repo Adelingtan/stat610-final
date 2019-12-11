@@ -1,9 +1,4 @@
-booklist = list.files("/Users/addytan/Downloads/books/")
-
-textdata<-lapply(booklist, function(x) 
-  tm::PlainTextDocument(readr::read_lines(file = x,progress = interactive()), id = basename(tempfile()), 
-                                                             language = "en", description = "Book Filse")) 
-textdata<-readr::read_lines("/Users/addytan/Downloads/books/sherlock.txt")
+textdata<-readr::read_lines("sherlock.txt")
 
 stop_words<-T
 one_textdata <- tau::textcnt(
