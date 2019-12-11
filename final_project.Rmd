@@ -51,10 +51,10 @@ library(tm)
 library(tau)
 library(plyr)
 library(dplyr)
+library(tidyr)
 library(readr)
 library(plotly)
 library(readr)
-setwd("/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books")
 ```
 
 ### Unigram
@@ -65,37 +65,28 @@ In the following code, we programming the unit gram model for all the 21 text do
 
 ```{r data}
  ##working directory
-require(knitr)
-opts_knit$set(root.dir = '/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books')
-booklist = list.files("/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books")
-
+#opts_knit$set(root.dir = '/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books')
+#booklist = list.files("/Users/zhangxinlu/Documents/IUcourse/stat-s610/hw1/books")
+booklist = list.files("/Users/addytan/Downloads/books")
 textdata<-lapply(booklist, function(x) tm::PlainTextDocument(readr::read_lines(file = x, 
-    progress = interactive()), heading = "KJB", id = basename(tempfile()), 
-    language = "en", description = "Report File")) 
-
-
-
+    progress = interactive()), id = basename(tempfile()), 
+    language = "en", description = "Book Filse")) 
 stop_words<-T
 textdata <- tau::textcnt(
   if(stop_words==T) {textdata=gsub("[^[:alnum:] ]", "",textdata)
-  tm::removeWords(tm::scan_tokenizer(textdata), tm::stopwords("SMART"))}
+  tm::removeWords(tm::scan_tokenizer(textdata), tm::stopwords("english"))}
   else {
     tm::scan_tokenizer(textdata)
   }, split = "[[:space:][:punct:][:digit:]]+",method = "string", n = 1L, lower = 1L)
-
-
 textdata <- plyr::ldply(textdata, data.frame) 
-
 colnames(textdata)<-c("word", "frequency")
-
 textdata$text_percent <- textdata$frequency / sum(textdata$frequency)*100
 new_onegrame_textdata <- textdata[order(-textdata$frequency),]
-
 ```
 We show the top 50 words out of 34254 words  in text documents. According to the two frequency table, we can see that, "I" and "Mr" have really high frequency than other words, which indeicates that Charles Dickens's novels may pay much attention on 
 the first-person perspective and male.
 ```{r uni_gram_doc}
-head(new_onegrame_textdata,n=50)
+head(new_onegrame_textdata,n=10)
 ```
 
 
@@ -111,21 +102,18 @@ In the following section, we implemented the bigram model and applied to the Cha
  
 ```{r bigrame}
 bigram_textdata<-lapply(booklist, function(x) tm::PlainTextDocument(readr::read_lines(file = x, 
-    progress = interactive()), heading = "KJB", id = basename(tempfile()), 
-    language = "en", description = "Report File"))
-
+    progress = interactive()), id = basename(tempfile()), 
+    language = "en", description = "Book Files"))
 BigramTokenizer <-
   function(x)
     unlist(lapply(ngrams(words(x), 2), paste, collapse = " "), use.names = FALSE)
-
 bigram_textdata <- tau::textcnt(
   if(stop_words==T) { bigram_textdata=gsub("[^[:alnum:] ]", "",bigram_textdata)
-    tm::removeWords(tm::scan_tokenizer(bigram_textdata), tm::stopwords("SMART")
+    tm::removeWords(tm::scan_tokenizer(bigram_textdata),tm::stopwords("english")
                     )}
   else {
     tm::scan_tokenizer(bigram_textdata)
   }, split = "[[:space:][:punct:][:digit:]]+",method = "string", n = 2L, lower = 1L)
-
 bigram_textdata <- plyr::ldply(bigram_textdata, data.frame) 
 colnames(bigram_textdata)<-c("word", "frequency")
 bigram_textdata$text_percent <- bigram_textdata$frequency / sum(bigram_textdata$frequency)*100
@@ -135,11 +123,40 @@ head(new_bigram_textdata)
 According to head of frequency table of word pairs, the most frequency word pair in documents. is "i, i",whose freuqnecy is 4069 and the $P(W_n=i, W_{n-1}=i) =0.4824$. In order to calculate the bigram model, we divided the joint probability by the probability of unigram. 
 ```{r}
 head(new_bigram_textdata)
+bigword<-data.frame(words_bi=new_bigram_textdata$word,new_bigram_textdata$text_percent) 
+
+bigword<-bigword %>% separate(words_bi, c("first_word", "word"),sep = "[^[:alnum:]]+")
+
+oneword<-data.frame(new_onegrame_textdata$word,new_onegrame_textdata$text_percent)
+colnames(oneword) <- c('word','one_percent')
+words_dictionary<-merge(bigword, new_onegrame_textdata,by='word')
+words_dictionary$joint<-words_dictionary$new_bigram_textdata.text_percent/words_dictionary$text_percent
+words_dictionary<-subset(words_dictionary, select = 1:3)
+colnames(words_dictionary)<-c('word','second','joint_prob')
+head(words_dictionary)
 ```
 
 After the bigram calculation, we selected the initial word as "i", and generated the sentence in the below:
+
+```{r MML}
+generate<-function(init,words_dictionary){
+  sentence<- c()
+  while(is.na(init)==FALSE){
+    sentence<-c(sentence,init)
+    secondword<-words_dictionary[words_dictionary$word==init,]
+    list_second<- setdiff(secondword[order(secondword$joint_prob,decreasing = TRUE),]$second,sentence)
+    init<-list_second[1]
+  }
+  return(toupper(paste(unlist(sentence), collapse=' ')))
+}
+
+init=new_onegrame_textdata$word[1]
+generate(init,words_dictionary)
+
+```
 
 
 
 ## Conclusion
 Language models contribute a process to distribute a probability to a sentence or a seuqnece of words, and to predict a word from leading words. n-grams models are Markov models which predict words from a fixed number of preceding words. In addition,the probabilities in n-gram models could be estimated by counting number of words occurence based on paricular pervious text condition. In this project, we implemented unigram and bigram models,applied both models with text documents of Charles Dickens and generated a new word sequence based on our analysis result.As we can see, both unigram and bigram models provided some particular features of text document written by Charles Dickens. As increase the size of preceding windows, there would be a more specific pattern once we implement models into different data set. This phenomenon indicates one of most common dilemmas in data analysis--there is always compromision between approxmation accuracy and computation complexity. 
+© 2019 GitHub, Inc.
