@@ -1,4 +1,11 @@
-
+library(tm)
+library(tau)
+library(plyr)
+library(dplyr)
+library(tidyr)
+library(readr)
+library(plotly)
+library(readr)
 
 
 #' @param text_data (txt) content read from read_lines
