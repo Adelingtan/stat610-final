@@ -167,4 +167,7 @@ generate(init,words_dictionary)
 
 ## Conclusion
 Language models contribute a process to distribute a probability to a sentence or a seuqnece of words, and to predict a word from leading words. n-grams models are Markov models which predict words from a fixed number of preceding words. In addition,the probabilities in n-gram models could be estimated by counting number of words occurence based on paricular pervious text condition. In this project, we implemented unigram and bigram models,applied both models with text documents of Charles Dickens and generated a new word sequence based on our analysis result.As we can see, both unigram and bigram models provided some particular features of text document written by Charles Dickens. As increase the size of preceding windows, there would be a more specific pattern once we implement models into different data set. This phenomenon indicates one of most common dilemmas in data analysis--there is always compromision between approxmation accuracy and computation complexity. 
-© 2019 GitHub, Inc.
+
+## GitHub Repository
+
+https://github.com/Adelingtan/stat610-final
