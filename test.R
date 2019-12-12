@@ -21,5 +21,6 @@ unigrame.df<-make_unigram(textdata)
 bigrame.df<-make_bigram(textdata)
 dictionary<-create_dictionary(bigrame.df,unigrame.df)
 init=unigrame.df$word[1]
+toupper(generate(init,dictionary))
 
 context(toupper(generate(init,dictionary)))
