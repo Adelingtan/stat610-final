@@ -1,4 +1,6 @@
 
+
+
 #' @param text_data (txt) content read from read_lines
 #' @return (data_frame) with column names "word", "frequency", and 'text_percent'
 
@@ -26,6 +28,7 @@ make_unigram<-function(text_data){
 #' @param text_data (txt) content read from read_lines
 #' @return (data_frame) with column names "word", "frequency", and 'text_percent'
 make_bigram<-function(text_data){
+  stop_words<-T
   bigram_textdata <- tau::textcnt(
     if(stop_words==T) { 
       text_data=gsub("[^[:alnum:] ]", "",text_data)
@@ -46,7 +49,7 @@ make_bigram<-function(text_data){
 #' @return (data_frame) with column'word','second','condition_prob'
 create_dictionary<-function(bigram.df,onegrame.df){
   bigword<-data.frame(words_bi=bigram.df$word,bigram.df$text_percent) 
-  bigword<-bigword %>% separate(words_bi, c("word", "second"),sep = "[^[:alnum:]]+")
+  bigword<-bigword %>% tidyr::separate(words_bi, c("word", "second"),sep = "[^[:alnum:]]+")
   oneword<-data.frame(onegrame.df$word,onegrame.df$text_percent)
   colnames(oneword) <- c('word','one_percent')
   words_dictionary<-merge(bigword, onegrame.df,by='word')
